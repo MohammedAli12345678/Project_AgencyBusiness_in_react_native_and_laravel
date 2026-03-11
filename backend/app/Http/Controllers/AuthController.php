@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 
-// php artisan serve --host=0.0.0.0
+/* php artisan serve --host=0.0.0.0
+   php artisan scout:import "App\Models\Product"
+*/
 class AuthController extends Controller
 {
     public function register(Request $request)

@@ -9,6 +9,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Scout\Searchable;
 
 /**
  * Class Product
@@ -63,6 +64,7 @@ class Product extends Model
 	protected $primaryKey = 'product_id';
 	public $timestamps = false;
 	protected $appends = ['full_image_path'];
+	use Searchable;
 
 	protected $casts = [
 		'price' => 'float',
@@ -100,11 +102,16 @@ class Product extends Model
 		'countries_deployed',
 		'duration'
 	];
-
+/*
 	public function category()
 	{
 		return $this->belongsTo(Category::class);
 	}
+		*/
+	public function category()
+	 {
+		return $this->belongsTo(Category::class, 'category_id', 'category_id');
+	 }
 
 	public function user()
 	{
@@ -120,12 +127,16 @@ class Product extends Model
 	{
 		return $this->hasOne(Buy::class);
 	}
-
+   /*
 	public function comments()
 	{
 		return $this->hasMany(Comment::class);
 	}
-
+*/
+public function comments()
+{
+return $this->hasMany(Comment::class, 'product_id', 'product_id');
+}
 	public function investments()
 	{
 		return $this->hasMany(Investment::class);
@@ -146,10 +157,21 @@ class Product extends Model
 		return $this->hasOne(ProductFeatuer::class);
 	}
 
+	/*
 	public function languages()
 	{
 		return $this->belongsToMany(Language::class, 'product_languages');
 	}
+		*/
+		public function languages()
+{
+    return $this->belongsToMany(
+        Language::class,           // الموديل المرتبط
+        'product_languages',       // جدول الـ pivot
+        'product_id',              // اسم عمود المنتج في pivot
+        'language_id'              // اسم عمود اللغة في pivot
+    );
+}
 
 	public function product_like()
 	{
@@ -180,11 +202,16 @@ class Product extends Model
 	{
 		return $this->hasMany(ProductsPhoto::class);
 	}
-
+/*
 	public function rates()
 	{
 		return $this->hasMany(Rate::class);
 	}
+		*/
+		public function rates()
+{
+    return $this->hasMany(Rate::class, 'product_id', 'product_id');
+}
 
 	public function related_products()
 	{
@@ -193,5 +220,23 @@ class Product extends Model
 	public function getFullImagePathAttribute()
 	{
 		return asset('storage/images/'.$this->main_image);
+	}
+
+	public function toSearchableArray()
+	{
+		$avgRate = $this->rates()->avg('rate') ?? 0;
+		$ratesCount = $this->rates()->count() ?? 0;
+		return[
+         'id'=>(string)$this->product_id,
+		 'product_name'=> $this->product_name,
+		 'short_description'=>$this->short_description,
+		 'price'=>(float)$this->price,
+		 'category_name'=>$this->category->category_name??'',
+		 'language'=>$this->languages->pluck('language_name')->implode(','),
+		 'status'=>$this->status??'',
+		 'rates_count' => (int)$ratesCount,
+		 'rates_avg_rate' => (float)$avgRate,
+		 'created_at' => $this->start_date ? strtotime($this->start_date) : time(),
+		];
 	}
 }

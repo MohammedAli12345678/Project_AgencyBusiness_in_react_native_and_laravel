@@ -15,4 +15,18 @@ class ProductController extends Controller
         
         return response()->json($products);
     }
+    public function all()
+    {
+        $projects = Product::with([
+            'category',
+            'languages',
+            'comments',
+            'rates'
+        ])
+        ->withCount(['comments', 'rates'])
+        ->withAvg('rates', 'rate')
+        ->get();
+
+        return response()->json($projects);
+    }
 }
