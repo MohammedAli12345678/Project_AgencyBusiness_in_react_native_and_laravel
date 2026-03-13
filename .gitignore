@@ -1,0 +1,13 @@
+# تجاهل ملفات الإعدادات الحساسة
+backend/.env
+mobile/app/config/api.ts
+web/.env
+
+# تجاهل المجلدات الضخمة
+backend/vendor/
+mobile/node_modules/
+web/node_modules/
+
+# ملفات النظام واللوج
+*.log
+.DS_Store
