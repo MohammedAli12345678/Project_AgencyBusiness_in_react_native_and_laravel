@@ -162,8 +162,8 @@ const ProjectDetailScreen = () => {
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel, { color: theme.text + '80' }]}>Progress</Text>
               <View style={styles.progressContainer}>
-                <View style={[styles.progressBar, { width: `${project.progress || 0}%`, backgroundColor: theme.tint }]} />
-                <Text style={[styles.progressText, { color: theme.text }]}>{project.progress || 0}%</Text>
+                <View style={[styles.progressBar, { width: `${project.progress || 0}%`, backgroundColor: 'rgba(103, 197, 231, 0.9)'/*theme.tint /*'black' */}]} />
+                <Text style={[styles.progressText, { color: theme.text, }]}>{project.progress || 0}%</Text>
               </View>
             </View>
           </View>
@@ -190,7 +190,7 @@ const ProjectDetailScreen = () => {
             <Text style={[styles.investmentLabel, { color: theme.text }]}>Minimum Investment</Text>
             
             <TouchableOpacity 
-              style={[styles.investButton, { backgroundColor: theme.tint }]}
+              style={[styles.investButton, { backgroundColor: 'rgba(103, 197, 231, 0.9)'/*theme.tint*/  }]}
               onPress={() => router.push(`/invest/${project.product_id}`)}
             >
               <Text style={styles.investButtonText}>Invest</Text>

@@ -105,11 +105,12 @@ const InvestmentsListScreen = () => {
             <Text style={[styles.emptyText, { color: theme.text + '80' }]}>
               No investments yet
             </Text>
+            <Footer />
           </View>
         }
       />
 
-  <Footer />
+  
     </SafeAreaProvider>
   );
 };

@@ -9,6 +9,7 @@ import Header from '../components/header';
 import Footer from '../components/footer';
 import { Colors } from '@/constants/theme';
 import { API_BASE_URL } from '@/config/api';
+import { Background } from '@react-navigation/elements';
 
 const InvestScreen = () => {
   const { id } = useLocalSearchParams();
@@ -116,7 +117,7 @@ const InvestScreen = () => {
           <View style={[styles.card, { backgroundColor: theme.card }]}>
             <Text style={[styles.title, { color: theme.text }]}>Invest in {project?.product_name}</Text>
             
-            <View style={styles.infoBox}>
+            <View style={[styles.infoBox ,{backgroundColor:theme.background/*'rgba(54, 65, 68, 0.9)'}*/}]}>
               <Text style={[styles.label, { color: theme.text + '80' }]}>Minimum Investment</Text>
               <Text style={[styles.amount, { color: theme.tint }]}>${project?.price}</Text>
             </View>
@@ -138,14 +139,14 @@ const InvestScreen = () => {
             </View>
             
             <TouchableOpacity 
-              style={[styles.button, { backgroundColor: theme.tint }, processing && styles.disabled]}
+              style={[styles.button, { backgroundColor:'rgba(103, 197, 231, 0.9)' /*theme.tint*/ }, processing && styles.disabled]}
               onPress={handleInvestWithPayPal}
               disabled={processing}
             >
               {processing ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Pay with PayPal</Text>
+                <Text style={[styles.buttonText,{color:theme.text}]}>Pay with PayPal</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -162,17 +163,22 @@ const InvestScreen = () => {
           </TouchableOpacity>
           <WebView
             source={{ uri: payPalUrl }}
+            userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+            incognito={true}
+            cacheEnabled={false}
             style={styles.webView}
             onNavigationStateChange={(navState) => {
                 console.log('🌐 PayPal URL:', navState.url); 
-              if (navState.url.includes('success')) {
+                const myServerSuccess = "http://10.52.198.8:8000/api/paypal/success";
+    const myServerCancel = "http://10.52.198.8:8000/api/paypal/cancel";
+              if (navState.url.includes(myServerSuccess/*'payment/success'*/)) {
                 setShowPayPal(false);
                 Alert.alert(
                   'Success', 
                   'Payment completed successfully!',
                   [{ text: 'OK', onPress: () => router.push('/invest') }]
                 );
-              } else if (navState.url.includes('cancel')) {
+              } else if (navState.url.includes(/*'payment/cancel'*/myServerCancel)) {
                 setShowPayPal(false);
                 Alert.alert('Cancelled', 'Payment was cancelled');
               }

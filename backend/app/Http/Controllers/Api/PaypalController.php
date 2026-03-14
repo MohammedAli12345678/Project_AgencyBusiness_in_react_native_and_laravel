@@ -87,8 +87,27 @@ class PaypalController extends Controller
                     'brand_name' => 'Zetrix',
                     'landing_page' => 'BILLING',
                     'user_action' => 'PAY_NOW',
-                    'return_url' => 'com.zetrix.app://payment/success',
-                    'cancel_url' => 'com.zetrix.app://payment/cancel',
+                    'shipping_preference' => 'NO_SHIPPING',
+                    'payment_method' => [
+                        'payer_selected' => 'PAYPAL',
+                        'payee_preferred' => 'IMMEDIATE_PAYMENT_REQUIRED' // 👈 يطلب دفع فوري
+                        ],
+        
+                    'return_url' => 'http://10.52.198.8:8000/api/paypal/success', // استبدل برابط سيرفرك
+                    'cancel_url' => 'http://10.52.198.8:8000/api/paypal/cancel',
+               
+                    ],
+                'payment_source' => [
+                    'card' => [
+                        'request' => [
+                            'card_attributes' => [
+                                'verification' => [
+                                    'method' => 'SCA_ALWAYS', // 👈 يقلل التوثيق
+                                    'outcome' => 'SUCCESS'
+                                ]
+                            ]
+                        ]
+                    ]
                 ]
             ];
 
