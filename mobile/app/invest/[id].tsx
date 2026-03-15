@@ -9,7 +9,7 @@ import Header from '../components/header';
 import Footer from '../components/footer';
 import { Colors } from '@/constants/theme';
 import { API_BASE_URL } from '@/config/api';
-import { Background } from '@react-navigation/elements';
+
 
 const InvestScreen = () => {
   const { id } = useLocalSearchParams();

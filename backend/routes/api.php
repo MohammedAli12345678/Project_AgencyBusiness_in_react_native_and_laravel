@@ -20,13 +20,23 @@ Route::get('/projects', [ProductController::class, 'all']);
 Route::get('/filters', [FilterController::class, 'index']);
 Route::get('/projects/search', [ProjectSearchController::class, 'search']);
 Route::get('/projects/{id}', [App\Http\Controllers\Api\ProductController::class, 'show']);
-Route::post('/investments', [InvestController::class, 'createInvestment']);
-Route::get('/investments/{id}', [InvestController::class, 'getInvestment']);
-Route::patch('/investments/{id}/status', [InvestController::class, 'updateInvestmentStatus']);
-Route::get('/users/{userId}/investments', [InvestController::class, 'getUserInvestments']);
+// Route::post('/investments', [InvestController::class, 'createInvestment']);
+// Route::get('/investments/{id}', [InvestController::class, 'getInvestment']);
+// Route::patch('/investments/{id}/status', [InvestController::class, 'updateInvestmentStatus']);
+// Route::get('/users/{userId}/investments', [InvestController::class, 'getUserInvestments']);
 
-Route::post('/paypal/create-order', [PaypalController::class, 'createOrder']);
-Route::post('/paypal/capture-order', [PaypalController::class, 'captureOrder']);
+// Route::post('/paypal/create-order', [PaypalController::class, 'createOrder']);
+// Route::post('/paypal/capture-order', [PaypalController::class, 'captureOrder']);
 
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/investments', [InvestController::class, 'createInvestment']);
+    Route::get('/investments/{id}', [InvestController::class, 'getInvestment']);
+    Route::patch('/investments/{id}/status', [InvestController::class, 'updateInvestmentStatus']);
+    Route::get('/users/{userId}/investments', [InvestController::class, 'getUserInvestments']);
+
+    Route::post('/paypal/create-order', [PaypalController::class, 'createOrder']);
+
+});
 
 ?>

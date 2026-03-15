@@ -34,6 +34,8 @@ import {
   useColorScheme,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { apiFetch } from '@/services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Star, MessageSquare, Clock, TrendingUp } from 'lucide-react-native';
 import Header from '../components/header';
@@ -48,11 +50,22 @@ const ProjectDetailScreen = () => {
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   const [project, setProject] = useState<Project | null>(null);
+
   const [loading, setLoading] = useState(true);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     fetchProjectDetails();
   }, [id]);
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const token = await AsyncStorage.getItem('user_token');
+      setIsLoggedIn(!!token);
+    };
+    checkLoginStatus();
+  }, []);
 
   const fetchProjectDetails = async () => {
     try {
@@ -65,6 +78,19 @@ const ProjectDetailScreen = () => {
     } finally {
       setLoading(false);
     }
+  };
+  const handleInvest = async () => {
+    const token = await AsyncStorage.getItem('user_token');
+  
+    if (!token) {
+      router.push({
+        pathname: '/Login',
+        params: { returnTo: `/invest/${project.product_id}` }
+      });
+      return;
+    }
+  
+    router.push(`/invest/${project.product_id}`);
   };
 
   if (loading) {
@@ -191,7 +217,7 @@ const ProjectDetailScreen = () => {
             
             <TouchableOpacity 
               style={[styles.investButton, { backgroundColor: 'rgba(103, 197, 231, 0.9)'/*theme.tint*/  }]}
-              onPress={() => router.push(`/invest/${project.product_id}`)}
+              onPress={handleInvest}
             >
               <Text style={styles.investButtonText}>Invest</Text>
             </TouchableOpacity>

@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Investment;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class PaypalController extends Controller
 {
@@ -55,10 +56,16 @@ class PaypalController extends Controller
             if (!$project) {
                 return response()->json(['error' => 'Project not found'], 404);
             }
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
 
             // 1. أولاً: أنشئ investment في قاعدة البيانات بحالة pending
             $investment = Investment::create([
-                'user_id' => auth()->id ?? 1,
+                'user_id' => Auth::id(),
                 'product_id' => $project->product_id,
                 'amount' => $request->amount,
                 'status' => 'pending',

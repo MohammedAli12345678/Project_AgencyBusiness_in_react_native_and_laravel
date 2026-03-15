@@ -1,5 +1,6 @@
 import Header from "../components/header";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -23,6 +24,9 @@ export default function LoginScreen() {
   const [errors, setErrors] = useState<any>({});
   const [success, setSuccess] = useState('');
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams();
+  const returnToPath = Array.isArray(returnTo) ? returnTo[0] : returnTo;
+
 
 
   const handleLogin = async () => {
@@ -57,7 +61,27 @@ export default function LoginScreen() {
       } else {
         setSuccess(data.message);
         await AsyncStorage.setItem('user_token', data.access_token)
-        router.replace('./index');
+
+            // 👇 خزن بيانات المستخدم (لو السيرفر بيرجعها)
+    if (data.user) {
+      await AsyncStorage.setItem('user', JSON.stringify(data.user));
+    } else {
+      // لو السيرفر ما بيرجعش user، استخدم البيانات اللي معاك
+      const userData = {
+        name: data.user?.name || form.email.split('@')[0], // جزء من الإيميل
+        email: form.email
+      };
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+    }
+      //   router.replace('/');
+      // setForm({ email: '', password: '' });
+        if(returnTo)
+        {
+          router.replace(returnToPath as any);
+        }else
+        {
+        router.replace('/');
+        }
         setForm({ email: '', password: '' });
       }
 

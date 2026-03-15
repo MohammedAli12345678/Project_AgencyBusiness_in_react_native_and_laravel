@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Investment;
@@ -21,7 +22,7 @@ class InvestController extends Controller
             'project_id' => 'required|exists:products,product_id',
             'amount' => 'required|numeric|min:1',
         ]);
-
+        
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -29,11 +30,17 @@ class InvestController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
+        
         try {
             // جلب المشروع
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'يجب تسجيل الدخول أولاً'
+                ], 401); // 401 = غير مصرح
+            }
             $project = Product::find($request->project_id);
-
+            
             // التحقق من أن المبلغ لا يقل عن سعر المشروع
             if ($request->amount < $project->price) {
                 return response()->json([
@@ -41,10 +48,10 @@ class InvestController extends Controller
                     'message' => 'Amount must be at least $' . $project->price
                 ], 400);
             }
-
+            
             // إنشاء الاستثمار
             $investment = Investment::create([
-                'user_id' => auth()->id ?? 1, // مؤقتاً: إذا ما في مستخدم مسجل
+                'user_id' => Auth::id(), // مؤقتاً: إذا ما في مستخدم مسجل
                 'product_id' => $project->product_id,
                 'amount' => $request->amount,
                 'status' => 'pending',
