@@ -232,7 +232,7 @@ useEffect(() => {
     >
       <Text style={styles.userName}>{user.name}</Text>
       <Ionicons name="chevron-down" size={14} color="#2B2D42" />
-      <Image source={{ uri: 'https://via.placeholder.com/35' }} style={styles.avatar} />
+      <Image source={{ uri: user?.photo }} style={styles.avatar} />
     </TouchableOpacity>
 
     {/* القائمة المنسدلة */}

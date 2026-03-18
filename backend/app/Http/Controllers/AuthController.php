@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+// أضف هذه في الأعلى
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 
 /* php artisan serve --host=0.0.0.0
@@ -197,12 +200,13 @@ class AuthController extends Controller
             'message' => 'تم تسجيل الدخول',
             'access_token'=>$token,
             'token_type'=>'Bearer',
-            'name'=>$user->name,
-            // 'user' => [
-            //     'id' => $user->id,
-            //     'name' => $user->name,
-            //     'email' => $user->email,
-            // ]
+            'user' => [
+                'id' => $user->user_id,
+                'name' => $user->user_name,
+                'email' => $user->email,
+                'role'=>$user->user_type,
+                'photo'=>$user->photo,
+            ]
           
         ], 200);
     
@@ -323,4 +327,52 @@ class AuthController extends Controller
         ], 200);
         
     }
+
+// داخل الكلاس AuthController
+public function updateProfile(Request $request)
+{
+    // الحصول على المستخدم المسجل حالياً من خلال التوكن
+    /** @var \App\Models\User $user */
+    $user = Auth::user(); // هذا سيختفي معه الخط الأحمر غالباً
+
+    // التحقق من البيانات (اختياري ولكن ينصح به)
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'role' => 'nullable|string',
+        'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // حد أقصى 2 ميجا
+    ]);
+
+    $user->user_name = $request->name;
+    $user->user_type = $request->role;
+
+    // معالجة الصورة إذا تم رفعها
+    if ($request->hasFile('photo')) {
+        // 1. حذف الصورة القديمة من السيرفر إذا كانت موجودة لتوفير المساحة
+        if ($user->photo) {
+            // نستخرج اسم الملف فقط من الرابط المخزن
+            $oldPath = str_replace(asset('storage/'), '', $user->photo);
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        // 2. تخزين الصورة الجديدة في مجلد profile_photos داخل مجلد public
+        $path = $request->file('photo')->store('profile_photos', 'public');
+        
+        // 3. تخزين الرابط الكامل للصورة
+        $user->photo = asset('storage/' . $path);
+    }
+
+    $user->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تحديث الملف الشخصي بنجاح',
+        'user' => [
+            'id' => $user->user_id,
+            'name' => $user->user_name,
+            'email' => $user->email,
+            'role' => $user->user_type,
+            'photo' => $user->photo,
+        ]
+    ]);
+}
 }

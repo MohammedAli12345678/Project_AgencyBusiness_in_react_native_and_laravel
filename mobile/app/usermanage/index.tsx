@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// app/invest-dashboard.tsx
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,38 +8,31 @@ import {
     TouchableOpacity,
     Image,
     Dimensions,
-    Platform,
     useColorScheme,
-
+    ActivityIndicator,
+    Alert
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/header';
 import Footer from '../components/footer';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from '@/config/api';
 
 const { width } = Dimensions.get('window');
 
 export default function InvestDashboard() {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
-    const [activeTab, setActiveTab] = useState('Overview');
+    const router = useRouter();
+    
+    // States
+    const [user, setUser] = useState(null);
+    const [investments, setInvestments] = useState([]);
+    const [stats, setStats] = useState<any[]>([])
+    const [loading, setLoading] = useState(true);
 
-    // بيانات تجريبية (Replace with API data)
-    const user = {
-        name: "Mohammed",
-        email: "moha772876@gmail.com",
-        role: "Premium Investor",
-        photo: 'https://via.placeholder.com/100'
-    };
-
-    const stats = [
-        { label: 'Total Invested', value: '$12,500', icon: 'coins', color: '#3b82f6' },
-        { label: 'Total Returns', value: '$2,100', icon: 'chart-line', color: '#10b981' },
-        { label: 'Active Projects', value: '3', icon: 'rocket-launch', color: '#f59e42' },
-        { label: 'Success Rate', value: '94%', icon: 'trophy', color: '#4361ee' },
-    ];
-
-    // الألوان بناءً على الوضع (Dark/Light)
     const theme = {
         bg: isDark ? '#0f172a' : '#f8f9fa',
         card: isDark ? '#1e293b' : '#ffffff',
@@ -48,34 +42,114 @@ export default function InvestDashboard() {
         primary: '#4361ee'
     };
 
+    // جلب كل البيانات مرة واحدة
+    useEffect(() => {
+        const fetchAllData = async () => {
+            setLoading(true);
+            try {
+                const token = await AsyncStorage.getItem('user_token');
+                if (!token) {
+                    router.push('/Login');
+                    return;
+                }
+
+                // 1. جلب بيانات المستخدم من AsyncStorage
+                const userData = await AsyncStorage.getItem('user');
+                if (userData) {
+                    const parsedUser = JSON.parse(userData);
+                    setUser({
+                        name: parsedUser.name || parsedUser.user_name || 'User',
+                        role: parsedUser.role || parsedUser.user_type || 'Investor',
+                        email: parsedUser.email || '',
+                        photo: parsedUser.photo || 'https://via.placeholder.com/70'
+                    });
+                }
+
+                // 2. جلب استثمارات المستخدم من API
+                const investmentsResponse = await fetch(`${API_BASE_URL}/api/user/investments`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const investmentsResult = await investmentsResponse.json();
+                
+                if (investmentsResult.success) {
+                    setInvestments(investmentsResult.data || []);
+                    
+                    // حساب الإحصائيات من البيانات
+                    const investmentsData = investmentsResult.data || [];
+                    const totalInvested = investmentsData.reduce((sum:any, inv:any) => {
+                        const amount = parseFloat(inv.amount.replace('$', '').replace(',', '')) || 0;
+                        return sum + amount;
+                    }, 0);
+
+                    const activeProjects = investmentsData.filter(inv => 
+                        inv.status === 'Active' || inv.status === 'Pending' 
+                    ).length;
+
+                    const completedProjects = investmentsData.filter(inv => inv.status === 'Completed').length;
+                    const successRate = investmentsData.length > 0 
+                        ? Math.round((completedProjects / investmentsData.length) * 100) 
+                        : 0;
+
+                    const totalReturns = Math.round(totalInvested * 0.15);
+
+                    setStats([
+                        { label: 'Total Invested', value: '$' + totalInvested.toLocaleString(), icon: 'currency-usd', color: '#3b82f6' },
+                        { label: 'Total Returns', value: '$' + totalReturns.toLocaleString(), icon: 'chart-line', color: '#10b981' },
+                        { label: 'Active Projects', value: activeProjects.toString(), icon: 'rocket-launch', color: '#f59e42' },
+                        { label: 'Success Rate', value: successRate + '%', icon: 'trophy', color: '#4361ee' },
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                Alert.alert('Error', 'Failed to load dashboard');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAllData();
+    }, []);
+
+    if (loading) {
+        return (
+            <View style={[styles.container, { backgroundColor: theme.bg, justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text style={{ color: theme.text, marginTop: 10 }}>Loading dashboard...</Text>
+            </View>
+        );
+    }
+
     return (
         <>
             <Header />
             <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
-                {/* <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} /> */}
                 <ScrollView showsVerticalScrollIndicator={false}>
-
-                    {/* --- 1. User Profile Header (دمج الـ Sidebar) --- */}
+                    {/* User Profile */}
                     <View style={[styles.profileCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                        <Image source={{ uri: user.photo }} style={styles.avatar} />
+                        <Image source={{ uri: user?.photo }} style={styles.avatar} />
                         <View style={styles.userInfo}>
-                            <Text style={[styles.userName, { color: theme.text }]}>{user.name}</Text>
-                            <Text style={[styles.userEmail, { color: theme.muted }]}>{user.email}</Text>
+                            <Text style={[styles.userName, { color: theme.text }]}>{user?.name}</Text>
+                            <Text style={[styles.userEmail, { color: theme.muted }]}>{user?.email}</Text>
                             <View style={styles.badge}>
-                                <Text style={styles.badgeText}>{user.role}</Text>
+                                <Text style={styles.badgeText}>{user?.role}</Text>
                             </View>
                         </View>
                     </View>
 
-                    {/* --- 2. Portfolio Overview (Stats Grid) --- */}
+                    {/* Portfolio Overview */}
                     <View style={styles.sectionHeader}>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Portfolio Overview</Text>
-                        <TouchableOpacity style={styles.investBtn}>
+                        <TouchableOpacity style={styles.investBtn} onPress={() => router.push('/projects')}>
                             <Ionicons name="add" size={20} color="#fff" />
                             <Text style={styles.investBtnText}>New Investment</Text>
                         </TouchableOpacity>
                     </View>
 
+                    {/* Stats Cards */}
                     <View style={styles.statsGrid}>
                         {stats.map((item, index) => (
                             <View key={index} style={[styles.statCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -90,44 +164,45 @@ export default function InvestDashboard() {
                         ))}
                     </View>
 
-                    {/* --- 3. Active Investments List --- */}
+                    {/* Investments List */}
                     <View style={[styles.listContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
                         <Text style={[styles.listTitle, { color: theme.text }]}>Your Investments</Text>
 
-                        {/* محاكاة الجدول (Rows) */}
-                        <InvestmentItem
-                            name="CodeMaster IDE"
-                            amount="$5,000"
-                            status="Active"
-                            statusColor="#10b981"
-                            theme={theme}
-                        />
-                        <InvestmentItem
-                            name="DataAnalyzer Pro"
-                            amount="$2,500"
-                            status="Completed"
-                            statusColor="#64748b"
-                            theme={theme}
-                        />
-                        <InvestmentItem
-                            name="SecureVault"
-                            amount="$5,000"
-                            status="Pending"
-                            statusColor="#f59e42"
-                            theme={theme}
-                        />
+                        {investments.length > 0 ? (
+                            investments.map((item, index) => (
+                                // const displayName = item.project_name || item.project?.name || item.name || "Zetrix Project";
+                                <InvestmentItem
+                                
+                                    key={item.id || index}
+                                    name={item.project_name || item.name}
+                                    amount={item.amount}
+                                    status={item.status}
+                                    statusColor={item.status_color}
+                                    theme={theme}
+                                    onPress={() => router.push(`/invest/${item.id}`)}
+                                />
+                            ))
+                        ) : (
+                            <View style={{ padding: 30, alignItems: 'center' }}>
+                                <MaterialCommunityIcons name="briefcase-off" size={50} color={theme.muted} />
+                                <Text style={{ color: theme.muted, marginTop: 10, textAlign: 'center' }}>
+                                    No investments yet.{'\n'}
+                                    Start investing today!
+                                </Text>
+                            </View>
+                        )}
                     </View>
-                    <Footer />
 
+                    <Footer />
                 </ScrollView>
             </SafeAreaView>
         </>
     );
 }
 
-// مكوّن فرعي لكل صف في الجدول لضمان نظافة الكود
-const InvestmentItem = ({ name, amount, status, statusColor, theme }) => (
-    <View style={[styles.itemRow, { borderBottomColor: theme.border }]}>
+// Investment Item Component
+const InvestmentItem = ({ name, amount, status, statusColor, theme, onPress }) => (
+    <TouchableOpacity onPress={onPress} style={[styles.itemRow, { borderBottomColor: theme.border }]}>
         <View style={{ flex: 2 }}>
             <Text style={[styles.itemName, { color: theme.text }]}>{name}</Text>
             <Text style={[styles.itemSub, { color: theme.muted }]}>{amount}</Text>
@@ -136,10 +211,10 @@ const InvestmentItem = ({ name, amount, status, statusColor, theme }) => (
             <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
             <Text style={[styles.statusText, { color: statusColor }]}>{status}</Text>
         </View>
-        <TouchableOpacity style={styles.viewBtn}>
+        <View style={styles.viewBtn}>
             <Text style={styles.viewBtnText}>View</Text>
-        </TouchableOpacity>
-    </View>
+        </View>
+    </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
@@ -288,4 +363,5 @@ const styles = StyleSheet.create({
         color: '#4361ee',
         fontSize: 12,
         fontWeight: '600',
-    }});
+    }
+});

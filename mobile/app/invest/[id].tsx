@@ -9,6 +9,8 @@ import Header from '../components/header';
 import Footer from '../components/footer';
 import { Colors } from '@/constants/theme';
 import { API_BASE_URL } from '@/config/api';
+import { apiFetch } from '../../services/api'
+
 
 
 const InvestScreen = () => {
@@ -31,7 +33,7 @@ const InvestScreen = () => {
 
   const fetchProject = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/projects/${id}`);
+      const response = await apiFetch(`/api/projects/${id}`);
       const data = await response.json();
       setProject(data);
     } catch (error) {
@@ -47,25 +49,26 @@ const InvestScreen = () => {
     console.log('1️⃣ Starting investment process...');
     console.log('2️⃣ Amount:', amount);
     console.log('3️⃣ Project ID:', id);
-  
+
     if (!amount || parseFloat(amount) <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
-  
+
     if (project && parseFloat(amount) < project.price) {
       Alert.alert('Error', `Minimum investment is $${project.price}`);
       return;
     }
-  
+
     setProcessing(true);
     console.log('4️⃣ Set processing to true');
-    
+
     try {
-      const url = `${API_BASE_URL}/api/paypal/create-order`;
+      // const url = `${API_BASE_URL}/api/paypal/create-order`;
+      const url = '/api/paypal/create-order';
       console.log('5️⃣ Fetching URL:', url);
-      
-      const response = await fetch(url, {
+
+      const response = await apiFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -73,12 +76,12 @@ const InvestScreen = () => {
           amount: parseFloat(amount)
         })
       });
-      
+
       console.log('6️⃣ Response status:', response.status);
-      
+
       const data = await response.json();
       console.log('7️⃣ Response data:', data);
-      
+
       if (data.success) {
         console.log('8️⃣ Success! Opening PayPal URL:', data.approve_url);
         setPayPalUrl(data.approve_url);
@@ -107,28 +110,28 @@ const InvestScreen = () => {
   return (
     <SafeAreaProvider style={[styles.container, { backgroundColor: theme.background }]}>
       <Header />
-      
+
       {!showPayPal ? (
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <ArrowLeft size={24} color={theme.text} />
           </TouchableOpacity>
-          
+
           <View style={[styles.card, { backgroundColor: theme.card }]}>
             <Text style={[styles.title, { color: theme.text }]}>Invest in {project?.product_name}</Text>
-            
-            <View style={[styles.infoBox ,{backgroundColor:theme.background/*'rgba(54, 65, 68, 0.9)'}*/}]}>
+
+            <View style={[styles.infoBox, { backgroundColor: theme.background/*'rgba(54, 65, 68, 0.9)'}*/ }]}>
               <Text style={[styles.label, { color: theme.text + '80' }]}>Minimum Investment</Text>
               <Text style={[styles.amount, { color: theme.tint }]}>${project?.price}</Text>
             </View>
-            
+
             <View style={styles.formGroup}>
               <Text style={[styles.label, { color: theme.text }]}>Amount to Invest ($)</Text>
               <TextInput
-                style={[styles.input, { 
+                style={[styles.input, {
                   backgroundColor: theme.background,
                   borderColor: theme.text + '20',
-                  color: theme.text 
+                  color: theme.text
                 }]}
                 placeholder="Enter amount"
                 placeholderTextColor={theme.text + '60'}
@@ -137,16 +140,16 @@ const InvestScreen = () => {
                 keyboardType="numeric"
               />
             </View>
-            
-            <TouchableOpacity 
-              style={[styles.button, { backgroundColor:'rgba(103, 197, 231, 0.9)' /*theme.tint*/ }, processing && styles.disabled]}
+
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: 'rgba(103, 197, 231, 0.9)' /*theme.tint*/ }, processing && styles.disabled]}
               onPress={handleInvestWithPayPal}
               disabled={processing}
             >
               {processing ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={[styles.buttonText,{color:theme.text}]}>Pay with PayPal</Text>
+                <Text style={[styles.buttonText, { color: theme.text }]}>invest</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -154,7 +157,7 @@ const InvestScreen = () => {
         </ScrollView>
       ) : (
         <View style={styles.webViewContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.closeButton}
             onPress={() => setShowPayPal(false)}
           >
@@ -167,27 +170,95 @@ const InvestScreen = () => {
             incognito={true}
             cacheEnabled={false}
             style={styles.webView}
-            onNavigationStateChange={(navState) => {
-                console.log('🌐 PayPal URL:', navState.url); 
-                const myServerSuccess = "http://10.52.198.8:8000/api/paypal/success";
-    const myServerCancel = "http://10.52.198.8:8000/api/paypal/cancel";
-              if (navState.url.includes(myServerSuccess/*'payment/success'*/)) {
+            // onNavigationStateChange={async (navState) => {
+            //   console.log('🌐 PayPal URL:', navState.url);
+            //   const myServerSuccess = `${API_BASE_URL}/api/paypal/success`;
+            //   const myServerCancel = `${API_BASE_URL}/api/paypal/cancel`;
+            //   if ((navState.url.includes('token=') && (navState.url.includes(myServerSuccess) || navState.url.includes('PayerID')))) {
+            //     const urlParams = new URLSearchParams(navState.url.split('?')[1]);
+            //     const token = urlParams.get('token')
+            //     setShowPayPal(false);
+            //     setProcessing(true);
+            //     if (token) {
+            //       try {
+            //         const response = await apiFetch(`/api/paypal/success?token=${token}`);
+            //         if (response.ok) {
+
+            //           Alert.alert(
+            //             'Success',
+            //             'Payment completed successfully!',
+            //             [{ text: 'OK', onPress: () => router.push('/usermanage') }]
+            //           );
+            //         } else {
+            //           router.push('/usermanage');
+            //         }
+
+
+            //       } catch (error) {
+            //         console.error('Capture Error:', error);
+            //         router.push('/usermanage');
+            //       } finally {
+            //         setProcessing(false);
+            //       }
+
+
+            //     }
+            //   } else if (navState.url.includes(/*'payment/cancel'*/myServerCancel)) {
+            //     setShowPayPal(false);
+            //     Alert.alert('Cancelled', 'Payment was cancelled');
+            //   }
+            // }}
+            onNavigationStateChange={async (navState) => {
+              console.log('🌐 PayPal URL:', navState.url);
+              
+              const myServerSuccess = `${API_BASE_URL}/api/paypal/success`;
+              const myServerCancel = `${API_BASE_URL}/api/paypal/cancel`;
+            
+              // التحقق من وصول الرابط للنجاح وأننا لا نقوم بعملية معالجة حالياً
+              if (!processing && navState.url.includes(myServerSuccess) && navState.url.includes('token=')) {
+                
+                // 1. تفعيل القفل فوراً لمنع التكرار
+                setProcessing(true); 
+                
+                const urlParams = new URLSearchParams(navState.url.split('?')[1]);
+                const token = urlParams.get('token');
+            
+                if (token) {
+                  try {
+                    // إغلاق الـ WebView قبل البدء لإشعار المستخدم بالمعالجة
+                    setShowPayPal(false);
+            
+                    const response = await apiFetch(`/api/paypal/success?token=${token}`);
+                    
+                    if (response.ok) {
+                      Alert.alert(
+                        'Success ✅',
+                        'Payment completed successfully!',
+                        [{ text: 'OK', onPress: () => router.push('/usermanage') }]
+                      );
+                    } else {
+                      console.error('Server responded with error');
+                      router.push('/usermanage');
+                    }
+                  } catch (error) {
+                    console.error('Capture Error:', error);
+                    Alert.alert('Error', 'Failed to verify payment with server');
+                    router.push('/usermanage');
+                  } finally {
+                    setProcessing(false);
+                  }
+                }
+              } else if (navState.url.includes(myServerCancel)) {
                 setShowPayPal(false);
-                Alert.alert(
-                  'Success', 
-                  'Payment completed successfully!',
-                  [{ text: 'OK', onPress: () => router.push('/invest') }]
-                );
-              } else if (navState.url.includes(/*'payment/cancel'*/myServerCancel)) {
-                setShowPayPal(false);
+                setProcessing(false);
                 Alert.alert('Cancelled', 'Payment was cancelled');
               }
             }}
           />
-      
+
         </View>
       )}
-      
+
     </SafeAreaProvider>
   );
 };

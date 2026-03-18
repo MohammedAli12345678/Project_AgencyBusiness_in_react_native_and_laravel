@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo,useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,12 +15,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/header';
 import Footer from '../components/footer';
-
+import { router } from 'expo-router';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 const { width } = Dimensions.get('window');
+import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios'
+import { API_BASE_URL } from '@/config/api';
+
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // نفس الثيم الخاص بصفحة الـ Dashboard لضمان الاستمرارية
   const theme = {
@@ -32,21 +40,118 @@ export default function ProfileScreen() {
     primary: '#4361ee'
   };
 
-  // الحالة (State) لإدارة البيانات كما في كود PHP
-  const [user, setUser] = useState({
-    username: "Mohammed",
-    email: "moha772876@gmail.com",
-    role: "Premium Investor",
-    photo: 'https://via.placeholder.com/150'
+
+ // دالة اختيار الصورة من المعرض
+ const pickImage = async () => {
+  // طلب الإذن للدخول للمعرض
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  
+  if (status !== 'granted') {
+    Alert.alert('عذراً', 'نحتاج إذن الوصول لمعرض الصور لكي نغير الصورة!');
+    return;
+  }
+
+  let result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes:['images'],
+    allowsEditing: true, // تفعيل قص الصورة
+    aspect: [1, 1], // صورة مربعة
+    quality: 0.7, // تقليل الجودة قليلاً لسرعة الرفع
   });
 
-  const [hasChanges, setHasChanges] = useState(false);
+  if (!result.canceled) {
+    // تحديث واجهة المستخدم بالصورة الجديدة مؤقتاً
+    setUser({ ...user, photo: result.assets[0].uri });
+    setHasChanges(true);
+  }
+};
+
+// دالة الحفظ وإرسال البيانات للـ Laravel
+const handleSave = async () => {
+  setLoading(true);
+  try {
+    const token = await AsyncStorage.getItem('user_token');
+    
+    // إعداد البيانات كـ FormData لأننا نرسل ملفاً (صورة)
+    const formData = new FormData();
+    formData.append('name', user.name);
+    formData.append('role', user.role);
+
+    // إذا كانت الصورة محلية (تبدأ بـ file://) قم بإضافتها
+    if (user.photo && user.photo.startsWith('file://')) {
+      const filename = user.photo.split('/').pop();
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+      
+      formData.append('photo', {
+        uri: user.photo,
+        name: filename,
+        type: type,
+      } as any);
+    }
+
+    // أرسل الطلب إلى الـ API الخاص بك
+    const response = await axios.post(`${API_BASE_URL}/api/update-profile`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (response.data.success) {
+      Alert.alert("نجاح", "تم تحديث البيانات بنجاح!");
+      // حفظ البيانات الجديدة في AsyncStorage
+      await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+      setHasChanges(false);
+    }
+    } catch (error) {
+    // سيطبع لك الخطأ القادم من لارافل بالضبط (مثلاً حقل ناقص في قاعدة البيانات)
+    console.log("Laravel Error:", error.response?.data); 
+    Alert.alert("خطأ", error.response?.data?.message || "حدثت مشكلة أثناء الحفظ.");
+} finally {
+    setLoading(false);
+  }
+};
+
+
 
   // دالة التعامل مع التغيير في الحقول
-  const handleInputChange = (field, value) => {
-    setUser({ ...user, [field]: value });
-    setHasChanges(true); // تفعيل زر الحفظ عند حدوث أي تغيير
+  const handleInputChange = (field: string, value: string) => {
+    setUser((prev: any) => ({ ...prev, [field]: value }));
+    setHasChanges(true);
   };
+
+  useEffect(() => {
+    const getUserFromToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('user_token');
+        console.log('🔑 Header Token:', token);
+        
+        if (token) {
+          // 👇 جيب بيانات المستخدم من التخزين
+          const userData = await AsyncStorage.getItem('user');
+          if (userData) {
+            const parsedUser = JSON.parse(userData);
+        // توحيد البيانات لكي يفهمها الـ Form
+        setUser({
+          name: parsedUser.name || parsedUser.user_name, // جرب الخيارين لضمان الوجود
+          role: parsedUser.role || parsedUser.user_type,
+          email: parsedUser.email,
+          photo: parsedUser.photo
+        });
+          } else {
+            // لو مفيش بيانات، استخدم الاسم الافتراضي
+            setUser({ name: "User" });
+          }
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.log('Error getting user:', error);
+      }
+    };
+    
+    getUserFromToken();
+  }, []);
 
   return (
     <>
@@ -58,21 +163,24 @@ export default function ProfileScreen() {
           <View style={[styles.profileSidebar, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <View style={styles.photoSection}>
               <View style={styles.photoWrapper}>
-                <Image source={{ uri: user.photo }} style={styles.mainAvatar} />
+                <Image source={{ uri: user?.photo }} style={styles.mainAvatar} />
                 <TouchableOpacity style={styles.editPhotoBtn}>
-                  <Ionicons name="camera-outline" size={20} color="#fff" />
+                  <Ionicons name="camera-outline" size={20} color="#fff" 
+                  onPress={pickImage}/>
                 </TouchableOpacity>
               </View>
-              <Text style={[styles.profileName, { color: theme.text }]}>{user.username}</Text>
+              <Text style={[styles.profileName, { color: theme.text }]}>{user?.name}</Text>
               <View style={styles.roleBadge}>
-                <Text style={styles.roleBadgeText}>{user.role}</Text>
+                <Text style={styles.roleBadgeText}>{user?.role}</Text>
               </View>
             </View>
 
             <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
             <View style={styles.sidebarActions}>
-              <TouchableOpacity style={styles.actionBtn}>
+              <TouchableOpacity style={styles.actionBtn}
+               onPress={()=>{router.push('/forgetpassword')}}
+              >
                 <Ionicons name="key-outline" size={20} color={theme.text} />
                 <Text style={[styles.actionBtnText, { color: theme.text }]}>Change Password</Text>
               </TouchableOpacity>
@@ -100,8 +208,8 @@ export default function ProfileScreen() {
                 <Ionicons name="person-outline" size={18} color={theme.muted} />
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
-                  value={user.username}
-                  onChangeText={(val) => handleInputChange('username', val)}
+                  value={user?.name}
+                  onChangeText={(val) => handleInputChange('name', val)}
                 />
               </View>
             </View>
@@ -113,7 +221,7 @@ export default function ProfileScreen() {
                 <Ionicons name="mail-outline" size={18} color={theme.muted} />
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
-                  value={user.email}
+                  value={user?.email}
                   editable={false}
                 />
               </View>
@@ -126,7 +234,7 @@ export default function ProfileScreen() {
                 <Ionicons name="ribbon-outline" size={18} color={theme.muted} />
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
-                  value={user.role}
+                  value={user?.role}
                   onChangeText={(val) => handleInputChange('role', val)}
                 />
               </View>
@@ -135,8 +243,8 @@ export default function ProfileScreen() {
             {/* زر الحفظ */}
             <TouchableOpacity 
               style={[styles.saveBtn, { backgroundColor: hasChanges ? theme.primary : theme.muted }]}
-              disabled={!hasChanges}
-              onPress={() => Alert.alert("Success", "Profile updated successfully!")}
+              disabled={!hasChanges || loading}
+              onPress={handleSave}
             >
               <Ionicons name="save-outline" size={20} color="#fff" />
               <Text style={styles.saveBtnText}>Save Changes</Text>

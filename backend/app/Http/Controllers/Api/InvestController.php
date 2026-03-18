@@ -177,4 +177,58 @@ class InvestController extends Controller
             ], 500);
         }
     }
+    /**
+ * جلب استثمارات المستخدم الحالي
+ */
+public function getMyInvestments(Request $request)
+{
+    try {
+        // التحقق من تسجيل الدخول
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'يجب تسجيل الدخول أولاً'
+            ], 401);
+        }
+
+        $userId = Auth::id();
+        
+        // جلب استثمارات المستخدم مع تفاصيل المشروع
+        $investments = Investment::with('product')
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($investment) {
+                $status = $investment->status ?? 'pending';
+                $statusColor = match($status) {
+                    'completed' => '#10b981',
+                    'pending' => '#f59e42',
+                    'cancelled' => '#ef4444',
+                    default => '#64748b'
+                };
+                
+                return [
+                    'id' => $investment->id,
+                    'project_name' => $investment->product->product_name ?? 'Unknown Project',
+                    'amount' => '$' . number_format($investment->amount, 0),
+                    'status' => ucfirst($status),
+                    'status_color' => $statusColor,
+                    'date' => $investment->created_at ? $investment->created_at->format('Y-m-d') : null,
+                    'transaction_id' => $investment->transaction_id,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $investments
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch investments',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }

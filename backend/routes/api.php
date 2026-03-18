@@ -1,12 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\PaypalController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\FilterController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ProjectSearchController;
 use App\Http\Controllers\Api\InvestController;
-use App\Http\Controllers\Api\PaypalController;
+
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/verfiy', [AuthController::class, 'verfiy']);
@@ -27,6 +28,7 @@ Route::get('/projects/{id}', [App\Http\Controllers\Api\ProductController::class,
 
 // Route::post('/paypal/create-order', [PaypalController::class, 'createOrder']);
 // Route::post('/paypal/capture-order', [PaypalController::class, 'captureOrder']);
+Route::get('/paypal/success', [PaypalController::class, 'success']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -36,7 +38,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{userId}/investments', [InvestController::class, 'getUserInvestments']);
 
     Route::post('/paypal/create-order', [PaypalController::class, 'createOrder']);
+    Route::post('/update-profile', [AuthController::class, 'updateProfile']);
+    Route::get('/user/investments', [App\Http\Controllers\Api\InvestController::class, 'getMyInvestments']);
 
 });
+Route::get('/dashboard', [App\Http\Controllers\Api\DashboardController::class, 'index']);
 
 ?>

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
+
 class PaypalController extends Controller
 {
     private $baseUrl;
@@ -100,8 +101,8 @@ class PaypalController extends Controller
                         'payee_preferred' => 'IMMEDIATE_PAYMENT_REQUIRED' // 👈 يطلب دفع فوري
                         ],
         
-                    'return_url' => 'http://10.52.198.8:8000/api/paypal/success', // استبدل برابط سيرفرك
-                    'cancel_url' => 'http://10.52.198.8:8000/api/paypal/cancel',
+                    'return_url' => 'http://10.139.139.8:8000/api/paypal/success', // استبدل برابط سيرفرك
+                    'cancel_url' => 'http://10.139.139.8:8000/api/paypal/cancel',
                
                     ],
                 'payment_source' => [
@@ -161,6 +162,7 @@ class PaypalController extends Controller
     /**
      * تأكيد نجاح الدفع
      */
+    /*
     public function success(Request $request)
     {
         try {
@@ -181,7 +183,184 @@ class PaypalController extends Controller
             return redirect()->to('yourapp://payment/cancel');
         }
     }
+        */
+        /*
 
+        public function success(Request $request)
+{
+    try {
+        Log::info('🔵 PayPal success called', [
+            'all_params' => $request->all(),
+            'token' => $request->token,
+            'order_id' => $request->order_id,
+            'query_token' => $request->query('token'),
+            'full_url' => $request->fullUrl()
+        ]);
+        
+        // $token = $request->token; // هذا هو الـ Order ID من PayPal
+
+        $token = $request->token ?? $request->order_id ?? $request->query('token');
+
+             
+        if (!$token) {
+            Log::error('❌ No token found in request');
+            return redirect()->to('com.zetrix.app://payment/cancel');
+        }
+        
+        Log::info('✅ Using token: ' . $token);
+
+
+        // 1. الحصول على Access Token للتحدث مع PayPal
+        $accessToken = $this->getAccessToken();
+        Log::info('✅ Got access token');
+
+
+
+        // 2. استدعاء عملية الـ Capture فوراً
+        $response = Http::withToken($accessToken)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->post($this->baseUrl . "/v2/checkout/orders/{$token}/capture");
+
+        $data = $response->json();
+
+               // ✅ الأهم: سجل الـ response كامل
+               Log::info('📥 PayPal capture response', [
+                'status_code' => $response->status(),
+                'response' => $data
+            ]);
+
+        // 3. التأكد من أن PayPal أكد العملية بنجاح
+        if ($response->successful() && isset($data['status']) && $data['status'] === 'COMPLETED') {
+            Log::info('💰 Payment completed successfully');
+            
+            // 4. الآن فقط نحدث قاعدة البيانات بأمان
+            $investment = Investment::where('transaction_id', $token)->first();
+            
+            if ($investment) {
+                $investment->status = 'completed';
+                $investment->save();
+                
+                // يمكنك هنا إضافة منطق إضافي مثل إرسال إيميل نجاح
+            }
+
+            // العودة للتطبيق (تأكد من أن Deep Link مفعّل في React Native)
+            return redirect()->to('com.zetrix.app://payment/success'); 
+        }
+
+        Log::error('PayPal Capture Failed: ' . json_encode($data));
+        return redirect()->to('com.zetrix.app://payment/cancel');
+
+    } catch (\Exception $e) {
+        Log::error('Paypal success error: ' . $e->getMessage());
+        return redirect()->to('com.zetrix.app://payment/cancel');
+    }
+}
+*/
+/*
+public function success(Request $request)
+{
+    try {
+        // ✅ سجل كل شي
+        Log::info('🔵 PayPal success called', [
+            'full_url' => $request->fullUrl(),
+            'token' => $request->token,
+            'query_token' => $request->query('token'),
+            'all_params' => $request->all()
+        ]);
+        
+        // ✅ جلب التوكن
+        $token = $request->token ?? $request->query('token');
+        
+        if (!$token) {
+            Log::error('❌ No token found');
+            return redirect()->to('com.zetrix.app://payment/cancel');
+        }
+        
+        Log::info('✅ Using token: ' . $token);
+        
+        // ✅ البحث عن الاستثمار
+        $investment = Investment::where('transaction_id', $token)->first();
+        
+        if ($investment) {
+            // ✅ تحديث الحالة
+            $investment->status = 'completed';
+            $investment->save();
+            
+            Log::info('✅ Investment updated successfully', [
+                'id' => $investment->id,
+                'old_status' => 'pending',
+                'new_status' => 'completed'
+            ]);
+            
+            return redirect()->to('com.zetrix.app://payment/success');
+        } else {
+            Log::error('❌ Investment not found for token: ' . $token);
+            
+            // ✅ ابحث في كل الاستثمارات للتأكد
+            $allInvestments = Investment::all();
+            Log::info('📊 All investments in DB:', [
+                'count' => $allInvestments->count(),
+                'first_5' => $allInvestments->take(5)->map(function($inv) {
+                    return ['id' => $inv->id, 'transaction_id' => $inv->transaction_id];
+                })
+            ]);
+        }
+        
+        return redirect()->to('com.zetrix.app://payment/cancel');
+        
+    } catch (\Exception $e) {
+        Log::error('❌ Paypal success error: ' . $e->getMessage());
+        return redirect()->to('com.zetrix.app://payment/cancel');
+    }
+}
+    */
+    public function success(Request $request)
+{
+    try {
+        // 1. جلب التوكن (Order ID)
+        $token = $request->token ?? $request->query('token');
+        
+        if (!$token) {
+            Log::error('❌ PayPal Success: No token found');
+            return response()->json(['success' => false, 'message' => 'No token'], 400);
+        }
+
+        // 2. الحصول على Access Token للخصم
+        $accessToken = $this->getAccessToken();
+
+        // 3. 🚨 الأهم: تنفيذ عملية الـ Capture (الخصم الفعلي من حساب المستخدم)
+        $response = Http::withToken($accessToken)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->withBody('{}', 'application/json')
+            ->post($this->baseUrl . "/v2/checkout/orders/{$token}/capture");
+
+        $data = $response->json();
+
+        // 4. التأكد من نجاح الخصم في PayPal
+        if ($response->successful() && isset($data['status']) && $data['status'] === 'COMPLETED') {
+            
+            // 5. البحث عن الاستثمار وتحديثه إلى completed
+            $investment = Investment::where('transaction_id', $token)->first();
+            
+            if ($investment) {
+                $investment->status = 'completed'; // هنا التغيير الحقيقي
+                $investment->save();
+                
+                Log::info('✅ Payment Captured and DB Updated: ' . $token);
+                
+                // إذا كان الطلب قادم من WebView الموبايل، نرجع JSON أو Redirect حسب رغبتك
+                return response()->json(['success' => true, 'message' => 'Payment Completed']);
+            }
+        }
+
+        Log::error('❌ PayPal Capture Failed', ['response' => $data]);
+        return response()->json(['success' => false, 'message' => 'Capture Failed'], 400);
+
+    } catch (\Exception $e) {
+        Log::error('❌ Error in PayPal Success: ' . $e->getMessage());
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+}
     /**
      * إلغاء الدفع
      */
@@ -202,6 +381,7 @@ class PaypalController extends Controller
     /**
      * تأكيد الدفع بعد موافقة المستخدم
      */
+    /*
     public function captureOrder(Request $request)
     {
         try {
@@ -238,4 +418,5 @@ class PaypalController extends Controller
             ], 500);
         }
     }
+        */
 }
