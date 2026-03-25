@@ -20,7 +20,7 @@ export default function MenuDrawer() {
     { icon: 'home-outline', label: 'Home', screen: '/' },
     { icon: 'folder-outline', label: 'Projects', screen: 'Projects' },
     { icon: 'call-outline', label: 'Contact', screen: 'Contact' },
-    { icon: 'document-text-outline', label: 'Blog', screen: 'Blog' },
+    // { icon: 'document-text-outline', label: 'Blog', screen: 'Blog' },
     { icon: 'information-circle-outline', label: 'About', screen: 'About' },
   ];
 

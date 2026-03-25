@@ -101,8 +101,8 @@ class PaypalController extends Controller
                         'payee_preferred' => 'IMMEDIATE_PAYMENT_REQUIRED' // 👈 يطلب دفع فوري
                         ],
         
-                    'return_url' => 'http://10.139.139.8:8000/api/paypal/success', // استبدل برابط سيرفرك
-                    'cancel_url' => 'http://10.139.139.8:8000/api/paypal/cancel',
+                    'return_url' => 'http://10.175.141.9:8000/api/paypal/success', // استبدل برابط سيرفرك
+                    'cancel_url' => 'http://10.175.141.9:8000/api/paypal/cancel',
                
                     ],
                 'payment_source' => [

@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ProjectSearchController;
 use App\Http\Controllers\Api\InvestController;
+use App\Http\Controllers\Api\ContactController;
 
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -43,5 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 Route::get('/dashboard', [App\Http\Controllers\Api\DashboardController::class, 'index']);
+Route::get('/developers', [App\Http\Controllers\DeveloperController::class, 'index']);
+Route::post('/contact', [ContactController::class, 'sendContactEmail']);
 
 ?>

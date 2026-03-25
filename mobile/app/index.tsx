@@ -405,7 +405,7 @@ export default function HomeScreen() {
               <TouchableOpacity style={styles.btnOutline} onPress={() => scrollToSection(1500)}><Text style={{ color: '#fff', fontWeight: '700' }}>Contact Us</Text></TouchableOpacity>
             </View>
             {/* <Image source={require('@/assets/images/partial-react-logo.png')} style={styles.heroImg} /> */}
-            <Image source={'http://localhost/assets/uploads/main.jpg'} style={styles.heroImg} />
+            <Image source={ {uri: `${API_BASE_URL}/storage/images/main.jpg`}} style={styles.heroImg} />
 
           </LinearGradient>
 
@@ -425,6 +425,7 @@ export default function HomeScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Featured Projects</Text>
             {projects.slice(0, 3).map((item: any) => (
                  <TouchableOpacity 
+                 key={item.product_id}
                   onPress={() => {
                     console.log('📱 Navigating to project:', item.product_id);
                     // router.push(`/project/${item.product_id}`);
