@@ -205,6 +205,12 @@ useEffect(() => {
 
   }
 
+  const isAdmin = () => {
+    if (!user) return false;
+    // تحقق من user_type أو role
+    return user.user_type === 'admin' || user.role === 'admin';
+  }
+
   return (
     
     <View style={styles.container}>
@@ -242,14 +248,24 @@ useEffect(() => {
           <Ionicons name="person-outline" size={18} />
           <Text>Profile</Text>
         </TouchableOpacity>
+        
         <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); router.push('/usermanage'); }}>
           <Ionicons name="settings-outline" size={18} />
           <Text>Settings</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); router.push('/manager/dashboard'); }}>
+
+        {/* <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); router.push('/manager/dashboard'); }}>
           <Ionicons name="person-outline" size={18} />
           <Text>Dashborad</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+
+            {isAdmin() && (
+                  <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); router.push('/manager/dashboard'); }}>
+                    <Ionicons name="grid-outline" size={18} />
+                    <Text>Dashboard</Text>
+                  </TouchableOpacity>
+                )}
+
         <TouchableOpacity style={styles.menuItem} onPress={() => handleLogout() /*setMenuVisible(false)*/}>
           <Ionicons name="log-out-outline" size={18} color="red" />
           <Text style={{color: 'red'}}>Logout</Text>

@@ -369,6 +369,7 @@ export default function HomeScreen() {
   //   { id: '1', name: 'AI Chatting', status: 'New', desc: 'Innovative digital solutions for business.', img: 'https://via.placeholder.com/300' },
   //   { id: '2', name: 'Zetrix App', status: 'Popular', desc: 'Establishing long-term relationships with customers.', img: 'https://via.placeholder.com/300' },
   // ];
+  //npx expo prebuild --platform android
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/top-products`)

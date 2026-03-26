@@ -16,6 +16,10 @@ user_type varchar(25),
 verfiy_token varchar(255),
 role varchar(255)
 );
+
+ALTER TABLE users 
+ADD COLUMN google_id VARCHAR(255) NULL UNIQUE AFTER user_id,
+ADD COLUMN avatar VARCHAR(255) NULL AFTER email;
 create table developers(
 	id int primary key auto_increment,
     name varchar(50),

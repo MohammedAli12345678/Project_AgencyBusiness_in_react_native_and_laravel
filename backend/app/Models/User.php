@@ -73,7 +73,9 @@ class User extends Authenticatable
 		'user_type',
 		'verfiy_token',
 		'role',
-		'verification_code'
+		'verification_code',
+		'google_id', 
+        'avatar',
 	];
 
 	public function blog_comments()

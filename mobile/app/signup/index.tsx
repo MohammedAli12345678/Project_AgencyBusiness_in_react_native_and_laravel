@@ -160,6 +160,10 @@ import { BlurView } from 'expo-blur';
 import { useRouter } from "expo-router";
 import { API_BASE_URL } from '../../config/api';
 
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
+//npx expo run:android
+
 export default function SignupScreen() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<any>({});
@@ -216,6 +220,63 @@ export default function SignupScreen() {
       console.log("Error:", error);
     }
   };
+
+  // دالة تسجيل الدخول بجوجل
+// const handleGoogleSignIn = async () => {
+//   try {
+//     // التحقق من وجود Google Play Services
+//     await GoogleSignin.hasPlayServices();
+    
+//     // تسجيل الدخول
+//     const userInfo = await GoogleSignin.signIn();
+//     console.log('Google User:', userInfo);
+    
+//     // إرسال التوكن للباك اند
+//     const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'Accept': 'application/json'
+//       },
+//       body: JSON.stringify({
+//         access_token: userInfo.data?.idToken,
+//       })
+//     });
+    
+//     const data = await response.json();
+    
+//     if (response.ok) {
+//       setSuccess('تم تسجيل الدخول بنجاح عبر Google');
+//       // بعد ثواني حول للصفحة الرئيسية
+//       setTimeout(() => {
+//         // router.push('/home'); // غيرها حسب اسم الصفحة الرئيسية عندك
+//       }, 1500);
+//     } else {
+//       setErrors({ google: data.message || 'فشل تسجيل الدخول' });
+//     }
+    
+//   } catch (error: any) {
+//     console.error('Google Sign-In Error:', error);
+//     if (error.code === 'SIGN_IN_CANCELLED') {
+//       setErrors({ google: 'تم إلغاء تسجيل الدخول' });
+//     } else if (error.code === 'PLAY_SERVICES_NOT_AVAILABLE') {
+//       setErrors({ google: 'خدمات Google Play غير متوفرة على هذا الجهاز' });
+//     } else {
+//       setErrors({ google: error.message || 'حدث خطأ ما، تأكد من الاتصال بالإنترنت' });
+//     }
+//   }
+// };
+
+
+// // تكوين Google Sign-In
+// React.useEffect(() => {
+//   GoogleSignin.configure({
+//     androidClientId: '24058141241-8iilkrph69ggqiikp3s92pk9lv1pht3b.apps.googleusercontent.com', // حط الـ Android Client ID من Google Cloud
+//     webClientId: '24058141241-qnr49u36854nm21l1kmdp4ka9h5epbn2.apps.googleusercontent.com',
+//     offlineAccess: true,
+//     scopes: ['profile', 'email'],
+//   });
+// }, []);
 
 
 
@@ -284,6 +345,23 @@ export default function SignupScreen() {
                 </TouchableOpacity>
               </View>
 
+              <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>أو سجل عبر</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity style={styles.googleBtn} /*onPress={handleGoogleSignIn}*/>
+            <Ionicons name="logo-google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
+            <Text style={styles.googleBtnText}>Continue with Google</Text>
+          </TouchableOpacity>
+
+          {errors.google && (
+            <View style={styles.errorAlert}>
+              <Text style={styles.errorText}>{errors.google}</Text>
+            </View>
+          )}
+
               <TouchableOpacity onPress={() => { router.push('/Login')/* Navigate to Login */ }}>
                 <Text style={styles.authSwitch}>
                   Already have an account? <Text style={styles.link}>Login</Text>
@@ -323,6 +401,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
     paddingTop: 60,
+  },
+  errorAlert: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 12,
+    width: '100%',
+    marginBottom: 15,
+    borderLeftWidth: 6,
+    borderLeftColor: '#ef4444',
   },
   authCard: {
     padding: 30,
@@ -396,5 +483,45 @@ const styles = StyleSheet.create({
     borderLeftColor: '#2ecc71',
   },
   successText: { color: '#256029', fontWeight: '600' },
-  errorText: { color: 'red', fontSize: 12, marginTop: 4 }
+  errorText: { color: 'red', fontSize: 12, marginTop: 4 },
+  // تنسيق الفاصل
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    width: '100%',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(141, 153, 174, 0.3)',
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: '#8D99AE',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // تنسيق زر جوجل
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  googleBtnText: {
+    color: '#2B2D42',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });

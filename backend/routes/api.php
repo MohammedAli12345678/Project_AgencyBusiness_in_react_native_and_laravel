@@ -8,8 +8,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ProjectSearchController;
 use App\Http\Controllers\Api\InvestController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\GoogleAuthController;
 
-
+Route::post('/auth/google', [GoogleAuthController::class, 'handleGoogleCallback']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/verfiy', [AuthController::class, 'verfiy']);
 Route::post('/resendCode', [AuthController::class, 'resendCode']);

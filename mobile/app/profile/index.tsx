@@ -152,6 +152,15 @@ const handleSave = async () => {
     
     getUserFromToken();
   }, []);
+  const handleLogout = async()=>
+    {
+      await AsyncStorage.removeItem('user_token');  // 1. مسح التوكن
+      await AsyncStorage.removeItem('user');        // 2. مسح بيانات المستخدم
+      setUser(null);                                 // 3. تحديث حالة المستخدم
+      // setMenuVisible(false);                         // 4. إغلاق القائمة
+      router.push('/');
+  
+    }
 
   return (
     <>
@@ -184,7 +193,8 @@ const handleSave = async () => {
                 <Ionicons name="key-outline" size={20} color={theme.text} />
                 <Text style={[styles.actionBtnText, { color: theme.text }]}>Change Password</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn}>
+              <TouchableOpacity style={styles.actionBtn}
+              onPress={()=>handleLogout()}>
                 <Ionicons name="log-out-outline" size={20} color="#ef4444" />
                 <Text style={[styles.actionBtnText, { color: "#ef4444" }]}>Sign Out</Text>
               </TouchableOpacity>
@@ -235,7 +245,8 @@ const handleSave = async () => {
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
                   value={user?.role}
-                  onChangeText={(val) => handleInputChange('role', val)}
+                  editable={false}
+                  // onChangeText={(val) => handleInputChange('role', val)}
                 />
               </View>
             </View>
